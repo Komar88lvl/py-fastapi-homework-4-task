@@ -68,7 +68,6 @@ router = APIRouter()
 async def register_user(
         user_data: UserRegistrationRequestSchema,
         background_tasks: BackgroundTasks,
-        settings: BaseAppSettings = Depends(get_settings),
         email_sender: EmailSenderInterface = Depends(get_accounts_email_notificator),
         db: AsyncSession = Depends(get_db),
 ) -> UserRegistrationResponseSchema:
@@ -174,6 +173,8 @@ async def register_user(
 )
 async def activate_account(
         activation_data: UserActivationRequestSchema,
+        background_tasks: BackgroundTasks,
+        email_sender: EmailSenderInterface = Depends(get_accounts_email_notificator),
         db: AsyncSession = Depends(get_db),
 ) -> MessageResponseSchema:
     """
@@ -228,6 +229,14 @@ async def activate_account(
     user.is_active = True
     await db.delete(token_record)
     await db.commit()
+
+    activation_link = f"http://127.0.0.1//api/v1/accounts/login/"
+
+    background_tasks.add_task(
+        email_sender.send_activation_complete_email,
+        str(user.email),
+        activation_link
+    )
 
     return MessageResponseSchema(message="User account activated successfully.")
 
