@@ -129,12 +129,12 @@ async def register_user(
             detail="An error occurred during user creation."
         ) from e
 
-    activation_link = f"http://127.0.0.1//api/v1/accounts/activate/{activation_token.token}/"
+    register_link = f"http://127.0.0.1//api/v1/accounts/activate/{activation_token.token}/"
 
     background_tasks.add_task(
         email_sender.send_activation_email,
         str(new_user.email),
-        activation_link
+        register_link
     )
 
     return UserRegistrationResponseSchema.model_validate(new_user)
@@ -253,6 +253,8 @@ async def activate_account(
 )
 async def request_password_reset_token(
         data: PasswordResetRequestSchema,
+        background_tasks: BackgroundTasks,
+        email_sender: EmailSenderInterface = Depends(get_accounts_email_notificator),
         db: AsyncSession = Depends(get_db),
 ) -> MessageResponseSchema:
     """
@@ -282,6 +284,14 @@ async def request_password_reset_token(
     reset_token = PasswordResetTokenModel(user_id=cast(int, user.id))
     db.add(reset_token)
     await db.commit()
+
+    reset_link = f"http://127.0.0.1//api/v1/accounts/reset-password/complete/{reset_token.token}/"
+
+    background_tasks.add_task(
+        email_sender.send_password_reset_email,
+        str(user.email),
+        reset_link
+    )
 
     return MessageResponseSchema(
         message="If you are registered, you will receive an email with instructions."
