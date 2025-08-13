@@ -1,4 +1,5 @@
 from datetime import date
+from typing import Optional
 
 from fastapi import UploadFile, Form, File, HTTPException
 from pydantic import BaseModel, field_validator, HttpUrl
@@ -16,7 +17,6 @@ class ProfileSchema(BaseModel):
     gender: str = Form(...),
     date_of_birth: date = Form(...),
     info: str = Form(...),
-    avatar: UploadFile = File(...)
 
     @field_validator("first_name")
     def validate_name(cls, value):
@@ -39,3 +39,14 @@ class ProfileSchema(BaseModel):
         if not value.strip():
             raise ValueError("Info cannot be empty or spaces only.")
         return value
+
+
+class ProfileResponseSchema(BaseModel):
+    id: int
+    user_id: int
+    first_name: str
+    last_name: str
+    gender: str
+    date_of_birth: date
+    info: str
+    avatar: Optional[str] = None
